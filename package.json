@@ -1,0 +1,38 @@
+{
+  "name": "poi-islands-of-ireland-nodejs",
+  "version": "1.0.0",
+  "description": "## A web-based point of interest javascript app to explore islands of Ireland",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peter-dev/poi-islands-of-ireland-nodejs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/peter-dev/poi-islands-of-ireland-nodejs/issues"
+  },
+  "homepage": "https://github.com/peter-dev/poi-islands-of-ireland-nodejs#readme",
+  "dependencies": {
+    "boom": "^7.3.0",
+    "dotenv": "^6.2.0",
+    "handlebars": "^4.1.0",
+    "hapi": "^18.0.0",
+    "hapi-auth-cookie": "^9.1.0",
+    "inert": "^5.1.2",
+    "joi": "^14.3.1",
+    "mais-mongoose-seeder": "^1.0.7",
+    "mongoose": "^5.4.7",
+    "vision": "^5.4.4"
+  },
+  "devDependencies": {
+    "prettier": "^1.16.0"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "printWidth": 120
+  }
+}
