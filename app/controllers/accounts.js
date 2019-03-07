@@ -127,7 +127,6 @@ const Accounts = {
       }
     }
   },
-
   // process update settings request, enable authentication
   updateSettings: {
     // enable validation for this handler
@@ -145,7 +144,8 @@ const Accounts = {
       },
       // handler to invoke if one or more of the fields fails the validation
       failAction: function(request, h, error) {
-        return h.view('settings', { title: 'Update settings error', errors: error.details })
+        return h
+          .view('settings', { title: 'Update settings error', errors: error.details })
           .takeover()
           .code(400);
       }
@@ -165,6 +165,37 @@ const Accounts = {
       } catch (err) {
         return h.view('settings', { errors: [{ message: err.message }] });
       }
+    }
+  },
+  // process delete account request, enable authentication
+  delete: {
+    handler: async function(request, h) {
+      try {
+        const payload = request.payload;
+        const id = request.auth.credentials.id;
+        const user = await User.findById(id);
+        // if delete checkbox is not set, throw custom error object and pass user in custom payload
+        // https://github.com/hapijs/hapi/blob/master/API.md#error-transformation
+        if (!payload.delete) {
+          const message = 'You need to confirm to delete your account';
+          const error = new Boom(message);
+          error.output.payload.custom = user;
+          throw error;
+        }
+        // returns deleted object if success, null if error
+        const deleted = await User.findByIdAndDelete(id);
+        if (!deleted) {
+          const message = 'There was an error during delete operation, please try again later';
+          const error = new Boom(message);
+          error.output.payload.custom = user;
+          throw error;
+        }
+      } catch (err) {
+        return h.view('settings', { errors: [{ message: err.message }], user: err.output.payload.custom });
+      }
+      const message = 'Your account has been deleted successfully';
+      request.cookieAuth.clear();
+      return h.view('login', { success: { message: message } });
     }
   },
   // logout, redirect to home page

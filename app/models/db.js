@@ -7,13 +7,13 @@ const Mongoose = require('mongoose');
 Mongoose.connect(process.env.db);
 const db = Mongoose.connection;
 
-/*async function seed() {
+async function seed() {
   var seeder = require('mais-mongoose-seeder')(Mongoose);
   const data = require('./initdata.json');
-
+  const User = require('./user');
   const dbData = await seeder.seed(data, { dropDatabase: false, dropCollections: true });
   console.log(dbData);
-}*/
+}
 // log fail
 db.on('error', function(err) {
   console.log(`database connection error: ${err}`);
