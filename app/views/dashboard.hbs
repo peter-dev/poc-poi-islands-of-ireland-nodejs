@@ -51,6 +51,11 @@
         </div>
       </div>
     </div>
+    <div id="poiImages" class="ui center aligned segment">
+      <div class="ui medium images">
+        <!-- generated dynamically by jquery -->
+      </div>
+    </div>
     <div class="ui segment">
       <div id="map" style="height: 400px; width:100%;"></div>
     </div>
@@ -85,6 +90,7 @@
   $(document).ready(function() {
     // hide the segment until user search for island
     $('#poiDetails').hide();
+    $('#poiImages').hide();
     // searches across any array of searchable objects (islands), assign raw output without encoding
     const content = {{{jsonIslands}}};
     $('.ui.search').search({
@@ -105,10 +111,20 @@
         $('#poiHeader').empty().html(result.name);
         $('#poiDescription').empty().html(result.description);
         $('#poiCoordinates').empty().html('Latitude: ' + result.geo.lat + ', Longitude: ' + result.geo.long);
+        // if images available, generate links and show segment
+        if (result.images.length > 0) {
+          let start = "<div class=\"ui medium images\">";
+          let end = "</div>";
+          let images = "";
+          result.images.forEach(img => {
+            images = images + "<img class=\"ui medium rounded image\" src=\"/images/" + result.uuid + "/" + img.uuid + ".png\">";
+          });
+          $('#poiImages').empty().html(start + images + end).show();
+        }
         // update google maps marker
         changeMarkerPosition(marker, map, Number(result.geo.lat), Number(result.geo.long));
       }
     });
   });
 </script>
-<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBx64txhsjX7TiG-mcMmTFEixW5o2ZEkRs&callback=initMap"></script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{apiKey}}&callback=initMap"></script>
