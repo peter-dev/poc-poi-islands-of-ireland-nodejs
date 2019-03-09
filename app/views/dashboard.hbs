@@ -1,5 +1,114 @@
 {{> menu_user id = 'dashboard'}}
 
 <section class="ui segment">
-
+  <div class="ui placeholder segment">
+    <div class="ui two column stackable center aligned grid">
+      <div class="ui vertical divider">Or</div>
+      <div class="middle aligned row">
+        <div class="column">
+          <div class="ui icon header">
+            <i class="search icon"></i>
+            Find Island
+          </div>
+          <div class="field">
+            <div class="ui category search">
+              <div class="ui icon input">
+                <input class="prompt" type="text" placeholder="Search islands...">
+                <i class="search icon"></i>
+              </div>
+              <div class="results"></div>
+            </div>
+          </div>
+        </div>
+        <div class="column">
+          <div class="ui icon header">
+            <i class="world icon"></i>
+            Add New Island
+          </div>
+          <div class="ui primary button">
+            Add POI
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- island details-->
+  <div id="poiDetails" class="ui segments">
+    <div class="ui segment">
+      <div class="ui items">
+        <div class="item">
+          <div class="content">
+            <h3 class="ui header"><span id="poiHeader">Name</span></h3>
+            <div class="description">
+              <p><span id="poiDescription">Description</span></p>
+            </div>
+            <div class="extra">
+              <div class="ui right floated button">Edit</div>
+              <i class="globe icon"></i>
+              <span id="poiCoordinates">Coordinates</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ui segment">
+      <div id="map" style="height: 400px; width:100%;"></div>
+    </div>
+  </div>
 </section>
+<script type="text/javascript">
+  // initialize and add the map
+  // https://developers.google.com/maps/documentation/javascript/tutorial
+  let marker;
+  let map;
+  function initMap() {
+    // the location of Ireland
+    const ireland = new google.maps.LatLng(53.1424, -7.6921);
+    const mapOptions = {
+      zoom: 7,
+      center: ireland,
+      mapTypeId: 'terrain',
+      scaleControl: true
+    };
+    // the map, centered at Ireland
+    map = new google.maps.Map(document.getElementById('map'), mapOptions);
+    // the marker, positioned at Ireland
+    marker = new google.maps.Marker({position: ireland, map: map});
+  }
+  // update marker position
+  function changeMarkerPosition(marker, map, lat, lng) {
+    const position = new google.maps.LatLng(lat, lng);
+    marker.setPosition(position);
+    map.setCenter(position);
+  }
+
+  $(document).ready(function() {
+    // hide the segment until user search for island
+    $('#poiDetails').hide();
+    // searches across any array of searchable objects (islands), assign raw output without encoding
+    const content = {{{jsonIslands}}};
+    $('.ui.search').search({
+      source: content,
+      type: 'category',
+      fields: {
+        title: 'name',
+        description: ''
+      },
+      searchFields: ['name'],
+      fullTextSearch: false,
+      // custom callback when result selected
+      onSelect: function(result) {
+        const poiDetails = $('#poiDetails');
+        if (!poiDetails.is(':visible')) {
+          poiDetails.show();
+        }
+        $('#poiHeader').empty().html(result.name);
+        $('#poiDescription').empty().html(result.description);
+        $('#poiCoordinates').empty().html('Latitude: ' + result.geo.lat + ', Longitude: ' + result.geo.long);
+        // update google maps marker
+        changeMarkerPosition(marker, map, Number(result.geo.lat), Number(result.geo.long));
+      }
+    });
+  });
+</script>
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBx64txhsjX7TiG-mcMmTFEixW5o2ZEkRs&callback=initMap"></script>
