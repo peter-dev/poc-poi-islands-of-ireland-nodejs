@@ -43,7 +43,7 @@
               <p><span id="poiDescription">Description</span></p>
             </div>
             <div class="extra">
-              <div class="ui right floated button">Edit</div>
+              <a href="/" id="poiEditLink" class="ui right floated button">Edit</a>
               <i class="globe icon"></i>
               <span id="poiCoordinates">Coordinates</span>
             </div>
@@ -111,6 +111,7 @@
         $('#poiHeader').empty().html(result.name);
         $('#poiDescription').empty().html(result.description);
         $('#poiCoordinates').empty().html('Latitude: ' + result.geo.lat + ', Longitude: ' + result.geo.long);
+        $('#poiEditLink').attr('href', '/edit/' + result.uuid);
         // if images available, generate links and show segment
         if (result.images.length > 0) {
           let start = "<div class=\"ui medium images\">";

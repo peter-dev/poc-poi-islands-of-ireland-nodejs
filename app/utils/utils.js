@@ -35,6 +35,23 @@ const Utils = {
     const fileExtension = dbImage.name.substr(dbImage.name.lastIndexOf('.') + 1);
     await createDir('./public/images/' + islandUUID, { recursive: true });
     await writeFile('./public/images/' + islandUUID +'/' + fileId + '.' + fileExtension, fileData);
+  },
+
+  // method to handle deletion of an image from public directory
+  handleFileDeletion: async function(islandUUID) {
+    const dirPath = './public/images/' + islandUUID;
+    // read all files and remove recursively
+    // https://gist.github.com/liangzan/807712/8fb16263cb39e8472d17aea760b6b1492c465af2
+    const files = fs.readdirSync(dirPath);
+    if (files.length > 0) {
+      for (var i = 0; i < files.length; i++) {
+        let filePath = dirPath + '/' + files[i];
+        if (fs.statSync(filePath).isFile())
+          fs.unlinkSync(filePath);
+        else
+          rmDir(filePath);
+      }
+    }
   }
 };
 

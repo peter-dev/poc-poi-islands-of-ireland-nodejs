@@ -33,6 +33,10 @@ const Accounts = {
       try {
         const id = request.auth.credentials.id;
         const user = await User.findById(id);
+        if (!user) {
+          const message = 'User details not available';
+          throw new Boom(message);
+        }
         return h.view('settings', { title: 'User Settings', user: user });
       } catch (err) {
         return h.view('login', { errors: [{ message: err.message }] });
@@ -144,8 +148,9 @@ const Accounts = {
       },
       // handler to invoke if one or more of the fields fails the validation
       failAction: function(request, h, error) {
+        const payload = request.payload;
         return h
-          .view('settings', { title: 'Update settings error', errors: error.details })
+          .view('settings', { title: 'Update settings error', errors: error.details, user: payload })
           .takeover()
           .code(400);
       }

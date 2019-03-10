@@ -15,7 +15,10 @@ module.exports = [
   { method: 'POST', path: '/delete', config: Accounts.delete },
   { method: 'GET', path: '/dashboard', config: Dashboard.showDashboard },
   { method: 'GET', path: '/create', config: Dashboard.showCreate },
+  { method: 'GET', path: '/edit/{poiId}', config: Dashboard.showEdit },
   { method: 'POST', path: '/create', config: Dashboard.create },
+  { method: 'POST', path: '/edit', config: Dashboard.updateIsland },
+  { method: 'POST', path: '/delete/{poiId}', config: Dashboard.delete },
   {
     method: 'GET',
     path: '/{param*}',

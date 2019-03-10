@@ -32,7 +32,10 @@ const start = async function() {
       layoutPath: './app/views/layouts',
       partialsPath: './app/views/partials',
       layout: true,
-      isCached: false
+      isCached: false,
+      // register helper method to be used in templates
+      // https://hapijs.com/tutorials/views ->View helpers
+      helpersPath: './app/helpers'
     });
     // hapi-auth-cookie configuration
     server.auth.strategy('standard', 'cookie', {

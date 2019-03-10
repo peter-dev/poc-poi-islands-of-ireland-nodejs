@@ -54,6 +54,25 @@ const Dashboard = {
       }
     }
   },
+  // load edit island page, enable authentication
+  showEdit: {
+    handler: async function(request, h) {
+      let regions;
+      try {
+        // get current island object from mongo db, get name of the region and images
+        const island = await Island.findOne({uuid: request.params.poiId}).populate('costalZone', 'name');
+        // get list of categories / regions, reduce the result to 'name' field only
+        regions = await Region.find({}, 'name');
+        if (!island) {
+          const message = 'Island details not available';
+          throw new Boom(message);
+        }
+        return h.view('edit', { title: 'Edit Island', categories: regions, island: island });
+      } catch (err) {
+        return h.view('edit', { title: 'Edit Island', categories: regions, errors: [{ message: err.message }] });
+      }
+    }
+  },
   // process add island request, enable authentication
   create: {
     // configure form encoding type
@@ -136,7 +155,124 @@ const Dashboard = {
         return h.view('create', { title: 'Add Island', categories: regions, errors: [{ message: err.message }] });
       }
     }
-  }
+  },
+
+
+
+
+  // process update island request, enable authentication
+  updateIsland: {
+    // configure form encoding type
+    payload: {
+      output: 'stream',
+      allow: 'multipart/form-data'
+    },
+    // enable validation for this handler
+    validate: {
+      payload: {
+        region: Joi.string().required(),
+        name: Joi.string().required(),
+        description: Joi.string().required(),
+        lat: Joi.number()
+          .precision(8)
+          .required(),
+        long: Joi.number()
+          .precision(8)
+          .required(),
+        file: Joi.any().optional(),
+        uuid: Joi.string()
+      },
+      options: {
+        abortEarly: false
+      },
+      // handler to invoke if one or more of the fields fails the validation
+      failAction: async function(request, h, error) {
+        let payload = request.payload;
+        payload.costalZone = {name: payload.region};
+        payload.geo = {lat: payload.lat, long: payload.long};
+        payload.file = undefined;
+        // get list of categories / regions, reduce the result to 'name' field only
+        const regions = await Region.find({}, 'name');
+        return h
+          .view('edit', { title: 'Edit Island', errors: error.details, categories: regions, island: payload })
+          .takeover()
+          .code(400);
+      }
+    },
+    // main handler for update island, includes joi validation
+    handler: async function(request, h) {
+      try {
+        const payload = request.payload;
+        // process form input and map into models
+        const region = await Region.findOne({ name: payload.region });
+        // get current island object from db
+        let currentIsland = await Island.findOne({uuid: payload.uuid});
+        currentIsland.name = payload.name;
+        currentIsland.identifier = '**' + payload.name + '**';
+        currentIsland.description = payload.description;
+        currentIsland.geo = {
+          lat: payload.lat,
+          long: payload.long
+        };
+        currentIsland.costalZone = region._id;
+        // image file is optional
+        if (payload.file._data.length > 0) {
+          const imgObject = new Image();
+          imgObject.data = payload.file._data;
+          imgObject.name = payload.file.hapi.filename;
+          imgObject.uuid = Utils.generateRandomUUID();
+          // save image into mongo db
+          const savedImage = await imgObject.save();
+          // save file locally in public directory
+          Utils.handleFileDownload(savedImage, currentIsland.uuid);
+          // update images reference in mongo db
+          currentIsland.images.push(savedImage);
+        }
+        // save island into mongo db
+        const savedIsland = await currentIsland.save();
+        return h.redirect('/edit/' + savedIsland.uuid);
+      } catch (err) {
+        return h.view('edit', { errors: [{ message: err.message }] });
+      }
+    }
+  },
+  // process delete island request, enable authentication
+  delete: {
+    handler: async function(request, h) {
+      try {
+        const payload = request.payload;
+        const uuid = request.params.poiId;
+        const island = await Island.findOne({uuid: uuid}).populate('costalZone', 'name');
+        // if delete checkbox is not set, throw custom error object and pass user in custom payload
+        // https://github.com/hapijs/hapi/blob/master/API.md#error-transformation
+        if (!payload.delete) {
+          const message = 'You need to confirm to delete the island';
+          const error = new Boom(message);
+          // get list of categories / regions, reduce the result to 'name' field only
+          const regions = await Region.find({}, 'name');
+          error.output.payload.island = island;
+          error.output.payload.regions = regions;
+          throw error;
+        }
+        // returns deleted object if success, null if error
+        const deleted = await Island.findOneAndDelete({uuid: uuid});
+        if (!deleted) {
+          const message = 'There was an error during delete operation, please try again later';
+          const error = new Boom(message);
+          // get list of categories / regions, reduce the result to 'name' field only
+          const regions = await Region.find({}, 'name');
+          error.output.payload.island = island;
+          error.output.payload.regions = regions;
+          throw error;
+        }
+      } catch (err) {
+        return h.view('edit', { errors: [{ message: err.message }], island: err.output.payload.island, categories: err.output.payload.regions });
+      }
+      Utils.handleFileDeletion(request.params.poiId);
+      const message = 'Island has been deleted successfully';
+      return h.view('create', { success: { message: message } });
+    }
+  },
 };
 
 module.exports = Dashboard;
