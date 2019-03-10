@@ -1,0 +1,43 @@
+{{> menu_user}}
+
+<section class="ui segment">
+  {{> success}}
+  <form class="ui form" action="/create" method="POST" enctype="multipart/form-data">
+    <h3 class="ui header">Add Island</h3>
+    <div class="two fields">
+      <div class="required field">
+        <label>Region (category)</label>
+        <select name="region" class="ui dropdown">
+          <option value="">Region</option>
+          {{#each categories}}
+            <option value="{{name}}">{{name}}</option>
+          {{/each}}
+        </select>
+      </div>
+      <div class="required field">
+        <label>Name</label>
+        <input placeholder="Name" type="text" name="name" value="{{payload.name}}" required>
+      </div>
+    </div>
+    <div class="required field">
+      <label>Description</label>
+      <textarea placeholder="Description" name="description" required>{{payload.description}}</textarea>
+    </div>
+    <div class="two fields">
+      <div class="required field">
+        <label>Latitude</label>
+        <input placeholder="Latitude" type="number" step="any" name="lat" value="{{payload.lat}}" required>
+      </div>
+      <div class="required field">
+        <label>Longitude</label>
+        <input placeholder="Longitude" type="number" step="any" name="long" value="{{payload.long}}"required>
+      </div>
+    </div>
+    <div class="field">
+      <label>Upload file (optional)</label>
+      <input type="file" name="file">
+    </div>
+    <button class="ui blue submit button">Submit</button>
+  </form>
+  {{> error }}
+</section>

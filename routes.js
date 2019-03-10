@@ -14,6 +14,8 @@ module.exports = [
   { method: 'POST', path: '/settings', config: Accounts.updateSettings },
   { method: 'POST', path: '/delete', config: Accounts.delete },
   { method: 'GET', path: '/dashboard', config: Dashboard.showDashboard },
+  { method: 'GET', path: '/create', config: Dashboard.showCreate },
+  { method: 'POST', path: '/create', config: Dashboard.create },
   {
     method: 'GET',
     path: '/{param*}',

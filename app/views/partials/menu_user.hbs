@@ -13,5 +13,7 @@
 </nav>
 
 <script>
-  $('#{{id}}').addClass("active item");
+  {{#if id}}
+    $('#{{id}}').addClass('active item');
+  {{/if}}
 </script>
