@@ -15,8 +15,6 @@ const Dashboard = {
   showDashboard: {
     handler: async function(request, h) {
       try {
-        const id = request.auth.credentials.id;
-        const user = await User.findById(id);
         const islands = await Island.find({})
           .populate('costalZone')
           .populate('images', 'uuid'); //populate uuid for images only
@@ -32,7 +30,6 @@ const Dashboard = {
         const jsonIslands = JSON.stringify(jsIslands);
         return h.view('dashboard', {
           title: 'Islands of Ireland',
-          user: user,
           jsonIslands: jsonIslands,
           apiKey: process.env.google_api_key
         });
@@ -44,13 +41,12 @@ const Dashboard = {
   // load add island page, enable authentication
   showCreate: {
     handler: async function(request, h) {
-      let regions;
       try {
         // get list of categories / regions, reduce the result to 'name' field only
-        regions = await Region.find({}, 'name');
+        const regions = await Region.find({}, 'name');
         return h.view('create', { title: 'Add Island', categories: regions });
       } catch (err) {
-        return h.view('create', { title: 'Add Island', categories: regions, errors: [{ message: err.message }] });
+        return h.view('login', { errors: [{ message: err.message }] });
       }
     }
   },
@@ -60,7 +56,7 @@ const Dashboard = {
       let regions;
       try {
         // get current island object from mongo db, get name of the region and images
-        const island = await Island.findOne({uuid: request.params.poiId}).populate('costalZone', 'name');
+        const island = await Island.findOne({ uuid: request.params.poiId }).populate('costalZone', 'name');
         // get list of categories / regions, reduce the result to 'name' field only
         regions = await Region.find({}, 'name');
         if (!island) {
@@ -69,7 +65,7 @@ const Dashboard = {
         }
         return h.view('edit', { title: 'Edit Island', categories: regions, island: island });
       } catch (err) {
-        return h.view('edit', { title: 'Edit Island', categories: regions, errors: [{ message: err.message }] });
+        return h.view('edit', { categories: regions, errors: [{ message: err.message }] });
       }
     }
   },
@@ -116,6 +112,8 @@ const Dashboard = {
       let regions;
       try {
         const payload = request.payload;
+        // get list of categories / regions, reduce the result to 'name' field only
+        regions = await Region.find({}, 'name');
         // process form input and map into models
         const region = await Region.findOne({ name: payload.region });
         let newIsland = new Island({
@@ -140,26 +138,18 @@ const Dashboard = {
           const savedImage = await imgObject.save();
           // save file locally in public directory
           Utils.handleFileDownload(savedImage, newIsland.uuid);
-          // update images reference in mongo db
+          // add images reference in mongo db
           newIsland.images.push(savedImage);
         }
         // save island into mongo db
         const savedIsland = await newIsland.save();
-
-        // get list of categories / regions, reduce the result to 'name' field only
-        regions = await Region.find({}, 'name');
         const message = "Your island '" + payload.name + "' has been added successfully";
         return h.view('create', { title: 'Add Island', categories: regions, success: { message: message } });
       } catch (err) {
-        regions = await Region.find({}, 'name');
-        return h.view('create', { title: 'Add Island', categories: regions, errors: [{ message: err.message }] });
+        return h.view('create', { categories: regions, errors: [{ message: err.message }] });
       }
     }
   },
-
-
-
-
   // process update island request, enable authentication
   updateIsland: {
     // configure form encoding type
@@ -188,8 +178,8 @@ const Dashboard = {
       // handler to invoke if one or more of the fields fails the validation
       failAction: async function(request, h, error) {
         let payload = request.payload;
-        payload.costalZone = {name: payload.region};
-        payload.geo = {lat: payload.lat, long: payload.long};
+        payload.costalZone = { name: payload.region };
+        payload.geo = { lat: payload.lat, long: payload.long };
         payload.file = undefined;
         // get list of categories / regions, reduce the result to 'name' field only
         const regions = await Region.find({}, 'name');
@@ -206,7 +196,8 @@ const Dashboard = {
         // process form input and map into models
         const region = await Region.findOne({ name: payload.region });
         // get current island object from db
-        let currentIsland = await Island.findOne({uuid: payload.uuid});
+        let currentIsland = await Island.findOne({ uuid: payload.uuid });
+        // update fields
         currentIsland.name = payload.name;
         currentIsland.identifier = '**' + payload.name + '**';
         currentIsland.description = payload.description;
@@ -232,7 +223,7 @@ const Dashboard = {
         const savedIsland = await currentIsland.save();
         return h.redirect('/edit/' + savedIsland.uuid);
       } catch (err) {
-        return h.view('edit', { errors: [{ message: err.message }] });
+        return h.view('login', { errors: [{ message: err.message }] });
       }
     }
   },
@@ -242,37 +233,27 @@ const Dashboard = {
       try {
         const payload = request.payload;
         const uuid = request.params.poiId;
-        const island = await Island.findOne({uuid: uuid}).populate('costalZone', 'name');
         // if delete checkbox is not set, throw custom error object and pass user in custom payload
         // https://github.com/hapijs/hapi/blob/master/API.md#error-transformation
         if (!payload.delete) {
           const message = 'You need to confirm to delete the island';
-          const error = new Boom(message);
-          // get list of categories / regions, reduce the result to 'name' field only
-          const regions = await Region.find({}, 'name');
-          error.output.payload.island = island;
-          error.output.payload.regions = regions;
-          throw error;
+          throw new Boom(message);
         }
         // returns deleted object if success, null if error
-        const deleted = await Island.findOneAndDelete({uuid: uuid});
+        const deleted = await Island.findOneAndDelete({ uuid: uuid });
         if (!deleted) {
           const message = 'There was an error during delete operation, please try again later';
-          const error = new Boom(message);
-          // get list of categories / regions, reduce the result to 'name' field only
-          const regions = await Region.find({}, 'name');
-          error.output.payload.island = island;
-          error.output.payload.regions = regions;
-          throw error;
+          throw new Boom(message);
         }
+        // delete related images from file system
+        Utils.handleFileDeletion(request.params.poiId);
+        const message = 'Island has been deleted successfully';
+        return h.view('create', { success: { message: message } });
       } catch (err) {
-        return h.view('edit', { errors: [{ message: err.message }], island: err.output.payload.island, categories: err.output.payload.regions });
+        return h.view('login', { errors: [{ message: err.message }] });
       }
-      Utils.handleFileDeletion(request.params.poiId);
-      const message = 'Island has been deleted successfully';
-      return h.view('create', { success: { message: message } });
     }
-  },
+  }
 };
 
 module.exports = Dashboard;

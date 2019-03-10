@@ -195,12 +195,12 @@ const Accounts = {
           error.output.payload.custom = user;
           throw error;
         }
+        const message = 'Your account has been deleted successfully';
+        request.cookieAuth.clear();
+        return h.view('login', { success: { message: message } });
       } catch (err) {
         return h.view('settings', { errors: [{ message: err.message }], user: err.output.payload.custom });
       }
-      const message = 'Your account has been deleted successfully';
-      request.cookieAuth.clear();
-      return h.view('login', { success: { message: message } });
     }
   },
   // logout, redirect to home page
